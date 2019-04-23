@@ -1,0 +1,37 @@
+---
+title: "Springboard IDS Capstone Project"
+author: "J Slaga"
+date: "3/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem
+
+### What factors - airport, airline, day of week, etc. - can be used to predict airline delays? 
+
+Examining flight data for 2015, are certain locations or carriers subject to more delays than others? Using this information, can one preemptively alter their travel plans to aviod significant delays?
+
+
+## Client
+
+Companies booking business travel can use this information to more efficeintly book travel for their employees by minimizing time lost to delays.
+
+## Data
+
+Data was found on Kaggle: https://www.kaggle.com/usdot/flight-delays Original data was collected by and published on the Department of Transportation's Bureau of Transportation Statistics.
+
+This will focus primarily on variables pertaining to departure delays from the data set:
+
+* Origin Airport
+* Airline
+* Delay reason: weather, air system, security, airline, or late aircraft
+* Day of week
+
+## Deliverables
+
+* Code
+* Slide deck
