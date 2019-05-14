@@ -26,25 +26,46 @@ str(late_flights)
 ggplot(late_flights, aes(x = DEPARTURE_DELAY)) +
   geom_histogram(binwidth = 15)
 
+delay_totals <- late_flights %>% group_by(DEPARTURE_DELAY) %>% 
+  tally %>% arrange(desc(n))
+
 ggplot(late_flights, aes(AIRLINE, DEPARTURE_DELAY)) +
   geom_boxplot()
 # a majority of the delays are brief
 
+late_by_day <- late_flights %>% group_by(DAY_OF_WEEK) %>% 
+  tally %>% arrange(desc(n))
+late_by_month <- late_flights %>% group_by(MONTH) %>% 
+  tally %>% arrange(desc(n))
+late_by_airline <- late_flights %>% group_by(AIRLINE) %>% 
+  tally %>% arrange(desc(n))
+
+late_by_day
+late_by_month
+#seems to have more late flights during months of high travel - summer, spring break, holidays
+late_by_airline
+#southwest has most delays folled by delta, united and AA - are these simply the airlines with the most flights?
+#are most of these small delays that may not impact travel time too much?
 
 
-#short vs long delays - what types of delays cause longest delay?
+#short vs long delays
 short <- filter(late_flights, DEPARTURE_DELAY < 60)
-extreme <- filter(late_flights, DEPARTURE_DELAY >900)
+extreme <- filter(late_flights, DEPARTURE_DELAY >600) #10+ hours
+
+#- what types of delays cause longest delay?
+## ??? group delay types to count 
+gathered_delays <- late_flights %>% gather(key = "delay_type", value = "time", AIR_SYSTEM_DELAY, SECURITY_DELAY, AIRLINE_DELAY, LATE_AIRCRAFT_DELAY, WEATHER_DELAY)
+
+## is this really returning what I need? Do multiple delays for a single flight act as desired?
 
 ggplot(short, aes(AIRLINE, DEPARTURE_DELAY)) +
   geom_boxplot()
 
 ggplot(extreme, aes(AIRLINE, DEPARTURE_DELAY)) +
   geom_boxplot()
+#southwest has most delayed flights, but has very few extreme delays; while AA has less than half the 
+#number of delayed flights, but has the a lot (and by far the longest) delays
 
-#weather_delays <- short %>% subset(WEATHER_DELAY > 0) %>% group_by((MONTH)) %>%
-#  tally %>% arrange(desc(n))
-#plot(weather_delays$DEPARTURE_DELAY, weather_delays$MONTH)
 
 weather_delays <- late_flights %>% subset(WEATHER_DELAY > 0) %>% group_by((MONTH), AIRLINE) %>%
   summarise(Total_Time = sum(WEATHER_DELAY))
@@ -89,12 +110,13 @@ us <- map_data("state")
 
 ggplot() +  
   geom_map(aes(x = long, y = lat, map_id = region), data = us,
-           map = us, fill = "#ffffff", size = 0.15, color = "black") +
+           map = us, fill = "88", size = 0.15, color = "black") +
   geom_point(data = map_df, 
-             aes(x = LONG, y = LAT, alpha = map_df$Total_Time/sum(map_df$Total_Time), fill = 'red'),
-             shape = 1) 
+             aes(x = LONG, y = LAT,  colour = map_df$Total_Time/sum(map_df$Total_Time)),
+             shape = 16) +
+  scale_color_gradient(low="beige", high="blue")
   
-
+# fill color and title for key (+labels?)?
 
 
 
@@ -137,6 +159,8 @@ plot(weather_delays$DEPARTURE_DELAY, weather_delays$MONTH)
 ba_flights <- late_flights %>% filter(ORIGIN_AIRPORT %in% c("OAK", "SFO", "SJO"))
 
 plot(ba_flights$DEPARTURE_DELAY, ba_flights$DAY_OF_WEEK)
+
+
 
 
 
