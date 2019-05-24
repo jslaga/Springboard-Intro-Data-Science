@@ -1,0 +1,59 @@
+---
+title: "Capstone Statistical Analysis Report"
+author: "J Slaga"
+date: "5/22/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(randomForest)
+library(scales)
+library(maps)
+
+setwd("~/Documents/School/Springboard/IDSCapstone/")
+
+##load flights into dataframe
+flights_df <- data.frame(read.csv("Datasets/flights_DW_clean.csv"))
+
+late_flights <- filter(flights_df, DEPARTURE_DELAY > 0)
+early_flights <- filter(flights_df, DEPARTURE_DELAY < 0)
+
+summary(late_flights)
+str(late_flights)
+
+late_by_day <- late_flights %>% group_by(DAY_OF_WEEK) %>% 
+  tally %>% arrange(desc(n))
+late_by_month <- late_flights %>% group_by(MonthName) %>% 
+  tally %>% arrange(desc(n))
+late_by_airline <- late_flights %>% group_by(AIRLINE) %>% 
+  tally %>% arrange(desc(n)) 
+
+```
+
+## Preliminary Exploration
+
+After initial cleanup of the data - removing unneeded variables, eliminating canceled and diverted flights, and subsetting the data to just the top ten airports - I began the initial exploration of the data set. I started by running some quick tallies of delayed flights by day of the week, month, and by airline.
+
+```{r echo=FALSE}
+##examine delays by day, month, airline
+
+late_by_day
+late_by_month
+late_by_airline
+
+```
+
+
+
+
+
+
+
+
