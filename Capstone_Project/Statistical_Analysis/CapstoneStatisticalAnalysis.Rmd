@@ -1,8 +1,15 @@
-#install and load packages
-install.packages( "tidyr")
-install.packages("randomForest")
-install.packages("maps")
+---
+title: "Capstone Statistical Analysis Report"
+author: "J Slaga"
+date: "5/22/2019"
+output: html_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -22,10 +29,13 @@ summary(late_flights)
 str(late_flights)
 
 ##examine delays by day, month, airline
-total_by_day <- flights_df %>% group_by(DAY_OF_WEEK) %>% tally
-total_by_month <- flights_df %>% group_by(MonthName) %>% tally
-total_by_airline <- flights_df %>% group_by(AIRLINE) %>% tally
-##  ??NAME COLUMSN???*************
+total_by_day <- flights_df %>% group_by(DAY_OF_WEEK) %>% 
+  tally
+total_by_month <- flights_df %>% group_by(MonthName) %>% 
+  tally
+total_by_airline <- flights_df %>% group_by(AIRLINE) %>% 
+  tally
+
 late_by_day <- late_flights %>% group_by(DAY_OF_WEEK) %>% tally 
 late_by_month <- late_flights %>% group_by(MonthName) %>% tally
 late_by_airline <- late_flights %>% group_by(AIRLINE) %>% tally
@@ -33,34 +43,51 @@ late_by_airline <- late_flights %>% group_by(AIRLINE) %>% tally
 total_by_day <- left_join(late_by_day, total_by_day, by = "DAY_OF_WEEK") %>% arrange(desc(n.x))
 total_by_month <- left_join(late_by_month, total_by_month, by = "MonthName") %>% arrange(desc(n.x))
 total_by_airline <- left_join(late_by_airline, total_by_airline, by = "AIRLINE") %>% arrange(desc(n.x))
+```
+
+### Preliminary Exploration
+
+After initial cleanup of the data - removing unneeded variables, eliminating canceled and diverted flights, and subsetting the data to just the top ten airports - I began the initial exploration of the data set. I started by running some quick tallies of delayed flights by day of the week, month, and by airline.
+
+```{r echo=FALSE}
+##examine delays by day, month, airline
 
 total_by_day
 total_by_month
 total_by_airline
 
+```
+
+Thursday, Monday, and Friday have the most delays and Saturday the least. This is in line with what one would expect - more delays on the heavily traveled days and fewer on the least traveled day. Similarly, high travel / popular vacation months - the summer months and March and December - have a higher number of delays. (Note: October data is missing.) Grouped by airline, the number of delays falls almost perfectly in line with the number of flights. Noteably, Southwest Airlines (WN) has more than double the late flights of the next highest airline, Delta (DL).  
+
+```{r  warning=FALSE, message=FALSE, echo=FALSE}
 ## flights by day of week
-# in delayedFlights.R
 late_flights$DAY_OF_WEEK <- ordered(late_flights$DAY_OF_WEEK, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
-#
+
 
 ggplot(late_flights, aes(x = DAY_OF_WEEK)) + 
   geom_bar()
 
 # Days of month
-#in delayedFlights.R
 late_flights$MonthName <- ordered(late_flights$MonthName,levels =
       c("January", "February", "March", "April", "May", "June", "July", "August", "September", 
         "October", "November", "December"))
-#
 ggplot(late_flights, aes(x = MonthName)) + 
-  geom_bar() +
+  geom_bar() 
+```
 
 
-##examine only top 10 airlines; US has imcomplete data; used AS instead
-included <- c("WN", "DL", "UA", "AA", "OO", "EV", "B6", "AS", "MQ", "NK") 
+```{r include=FALSE}
+##examine only top 10 airlines
+included <- c("WN", "DL", "UA", "AA", "OO", "EV", "B6", "AS", "MQ", "NK")
 late_flights <- late_flights %>% filter(AIRLINE %in% included)
+```
 
 
+#### Distribution Of Delay Times
+I plotted some simple distributions of the departure delays. The histograms show, as expected, a distribution skewed to the left. The majority of flight delays are short delays - departures delayed less than an hour. This pattern is seen across all of the airlines. 
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
 ## distribution of departure delays
 ggplot(late_flights, aes(x = DEPARTURE_DELAY)) +
   geom_histogram(binwidth = 15) +
@@ -73,12 +100,22 @@ ggplot(late_flights, aes(x = DEPARTURE_DELAY)) +
 
 delay_totals <- late_flights %>% group_by(DEPARTURE_DELAY) %>% 
   tally %>% arrange(desc(n))
-# direct correlation between length of departure delay and frequency
+```
 
+
+
+
+While Southwest has the most delayed flights of all the airlines, a large proportion of the delays are less than 30 minutes, and its longest delay is the least of all its competitors. In contrast, American Airlines (AA) has less than half of the late flights of Southwest, but has by far the longest delays of all the airlines. But what really stands out is that 75% of delays for each airline are less than 60 minutes.
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
 ggplot(late_flights, aes(AIRLINE, DEPARTURE_DELAY)) +
   geom_boxplot()
-# a majority of the delays are brief; American Airlines has the longest delays
+```
 
+#### Short vs. Extreme Delays
+I further examined flights with short delays (less than one hour) and extreme delays (over ten hours). 
+
+```{r  warning=FALSE, message=FALSE, echo=FALSE}
 ##examine short and long delays
 short <- filter(late_flights, DEPARTURE_DELAY < 60)
 extreme <- filter(late_flights, DEPARTURE_DELAY >600) #10+ hours
@@ -89,10 +126,19 @@ ggplot(short, aes(AIRLINE, DEPARTURE_DELAY)) +
 
 ggplot(extreme, aes(AIRLINE, DEPARTURE_DELAY)) +
   geom_boxplot()
+#southwest has most delayed flights, but has very few extreme delays; while AA has less than half the 
+#number of delayed flights, but has a lot (and by far the longest) delays
 
+```
+
+
+For delays less than one hour, all the airlines show similar distributions - their medians around 10 - 15 minutes and 75% of the delays for each airline falling below 30 minutes. Contrast this with the boxplot for the extreme delays where far more variance can be observed between the airlines. Again we can note that while Southwest has by far the largest number of delayed flights, it has very few extreme delays. In comparison, American Airlines (having half the total number of delayed flights of Southwest) has by far, the longest delays of all the airlines.
+
+#### Weather Delays
+One would expect weather delays to occur most often during certain times of year. I examined by month the amount of time departures were delayed for each airline.
+
+```{r  warning=FALSE, message=FALSE, echo=FALSE}
 ##look at weather delays
-##scaled to normalize across the airlines regardless of number of flights
-##**********can we add code to cat by delay type????????
 weather_delays <- late_flights %>% subset(WEATHER_DELAY > 0) %>% group_by((MONTH), AIRLINE) %>%
   summarise(Total_Time = sum(WEATHER_DELAY))
 
@@ -106,8 +152,11 @@ ggplot(weather_delays) +
           plot.title = element_text(hjust=0.5)) +
   scale_x_continuous(breaks = pretty_breaks(12)) +
   facet_wrap(~AIRLINE)
+```
 
-#######
+As expected, American Airlines, Jetblue (B6), Delta, American Eagle (MQ), Sky West (OO), United and Southwest have spikes in February and December, months of winter storms. Most of these airlines also have more delays in June through August as well.
+
+```{r  warning=FALSE, message=FALSE, echo=FALSE}
 summer_delays <- late_flights %>% subset(WEATHER_DELAY > 0) %>% subset(MONTH %in% c(5, 6, 7, 8))
   
 nonsummer_delays <- late_flights %>% subset(WEATHER_DELAY > 0) %>% subset(!MONTH %in% c(5, 6, 7, 8))
@@ -122,51 +171,9 @@ ggplot(delay_df, aes(delay_df$Season, delay_df$WEATHER_DELAY)) +
 t.test(summer_delays$WEATHER_DELAY, nonsummer_delays$WEATHER_DELAY)
 ## while there are more delays in summer, there's no sig diff in average delay througout the year; 
 ## p-value = 0.09289 ; ~10% chance that pops are same 
+```
 
-  
+While there are more delays in summer, there's no significant difference in the average delay between the summer and non-summer months.
 
-#############################################################
-##where are the airports with the delays?
-##looking at SW summer months  May. june July
-WN_summer <- late_flights %>% subset(WEATHER_DELAY > 0) %>% subset(AIRLINE == "WN") %>% 
-  subset(MONTH %in% c(5, 6, 7, 8)) %>% group_by(ORIGIN_AIRPORT) %>%
-  summarise(Total_Time = sum(WEATHER_DELAY)) 
-##
-  
-
-## 
-#target_airlines <- c("AA", "DL", "WN")
-target_airlines <- c("WN", "DL", "UA", "AA", "OO", "EV", "B6", "AS", "MQ", "NK")
-
-target_df <- flights_df %>% filter(AIRLINE %in% target_airlines)
-target_df$LAT <- NA
-target_df$LONG <- NA
-
-air_dat <- read.delim("https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat",header=FALSE,sep=",")
-# V7 lat, V8 long, v5 airport
-
-# replace over groups of airports
-airports <- unique(target_df$ORIGIN_AIRPORT)
-
-for (i in 1:length(airports)) {
-  airport <- as.character(airports[i])
-  air_lat <- air_dat$V7[air_dat$V5 == airport] #checking lat for airport
-  air_long <- air_dat$V8[air_dat$V5 == airport] #checking long for airport
-  
-  target_df$LAT[target_df$ORIGIN_AIRPORT == airport] <- air_lat
-  target_df$LONG[target_df$ORIGIN_AIRPORT == airport] <- air_long
-  }
-
-###MAPS
-map_df <- target_df %>% subset(WEATHER_DELAY > 0) %>% group_by(ORIGIN_AIRPORT, LAT, LONG) %>%
-    summarise(Total_Time = sum(WEATHER_DELAY))
-
-us <- map_data("state")
-
-ggplot() +  
-  geom_map(aes(x = long, y = lat, map_id = region), data = us,
-           map = us, fill = "88", size = 0.15, color = "black") +
-  geom_point(data = map_df, 
-             aes(x = LONG, y = LAT,  colour = map_df$Total_Time/sum(map_df$Total_Time)),
-             shape = 16) +
-  scale_color_gradient(low="beige", high="blue")
+I will be exploring further weather these variables can be used to accurately predict likelihood of a
+late departure.
