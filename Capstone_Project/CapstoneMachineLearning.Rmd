@@ -1,0 +1,42 @@
+---
+title: "Capstone Machine Learning Report"
+author: "J Slaga"
+date: "5/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Predicting Airline Flight Delays
+Once the data was cleaned up and the initial exploration was complete, an in-depth data analysis was performed using machine learning. Again, our stated goal is to help a traveler optimize their time by avoiding potential delays in travel. The main question I wished to answer was: Could airline flight delays be predicted using given data? Using a dataset from 2015, we could examine how and which of the different factors corresponded to the delayed flights - a supervised problem. The goal then is to find a linear regression model that could predict flight delays.
+
+In the exploration of the data, I found that many airlines made up for shorter departure delays in the air, so for the modeling, ARRIVAL_DELAY was chosen as the dependent variable. After investigating the many variables provided in the dataset, DEPARTURE_DELAY, DAYPART, DAY_OF_WEEK, MONTH, and AIRLINE were chosen as the predictors to examine in the creation of a model. It was observed that examining DEPARTURE_DELAY in conjunction with DAYPART produced a higher Adjusted R-squared value, the main metric I was using to determine the prefered model. 
+
+The following models were used:
+
+```{r  warning=FALSE, message=FALSE, eval=FALSE}
+## Model 1
+model1 <- lm(ARRIVAL_DELAY ~ DEPARTURE_DELAY + DAYPART, data=late_flights)
+summary(model1)
+ 
+## Model 2 ***
+model2 <- lm(ARRIVAL_DELAY ~ DEPARTURE_DELAY + DEPARTURE_DELAY:DAYPART, data=late_flights)
+summary(model2)
+
+## Model 3
+model3 <- lm(ARRIVAL_DELAY ~ DEPARTURE_DELAY + DEPARTURE_DELAY:DAYPART + DAY_OF_WEEK, data=late_flights)
+summary(model3)
+
+## Model 4
+model4 <- lm(ARRIVAL_DELAY ~ DEPARTURE_DELAY + DEPARTURE_DELAY:DAYPART + DAY_OF_WEEK + MONTH , data=late_flights)
+summary(model4)
+
+## Model 5
+model5 <- lm(ARRIVAL_DELAY ~ DEPARTURE_DELAY + DEPARTURE_DELAY:DAYPART + DAY_OF_WEEK + AIRLINE, data=late_flights)
+summary(model5)
+```
+
+
+Model 5 was chosen as the best fitting model with an Adjusted R-squared value of 0.927. It was tested on data split into training and test sets at 80/20.
